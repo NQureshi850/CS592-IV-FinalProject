@@ -1,0 +1,79 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+
+import pandas as pd
+
+fraking = pd.read_csv ('subsetFracking.csv')
+earthquake = pd.read_csv ('earthquakes_2010to2016.csv')
+
+
+fraking["JobStartDate"] = pd.to_datetime(fraking["JobStartDate"])
+earthquake["time"] = pd.to_datetime(earthquake["time"])
+earthquake = earthquake[(earthquake['latitude'] > 30) & (earthquake['latitude'] < 40) & (earthquake['longitude'] > -110) & (earthquake['longitude'] < -90)]
+earthquake
+
+
+fraking['Year'] = pd.DatetimeIndex(fraking['JobStartDate']).year
+
+
+fraking.head()
+
+
+earthquake['Year'] = pd.DatetimeIndex(earthquake['time']).year
+
+
+earthquake.head()
+
+
+earthquake['YM'] = earthquake['time'].dt.strftime('%Y/%m')
+fraking['YM'] = fraking['JobStartDate'].dt.strftime('%Y/%m')
+
+
+fraking.head()
+
+
+earthquake.head()
+
+
+fraking = fraking.groupby(['YM'])["TotalBaseWaterVolume"].sum()
+
+
+fraking = pd.DataFrame(fraking)
+
+
+fraking
+
+
+earthquake = earthquake.groupby(['YM'])["mag"].sum()
+
+
+earthquake = pd.DataFrame(earthquake)
+
+
+earthquake
+
+
+frakquake = pd.merge(earthquake,fraking, left_on="YM", right_on = "YM" )
+
+
+frakquake
+
+
+import seaborn as sns
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+import matplotlib.pyplot as plt
+
+# Plot
+sns.set_style("white")
+gridobj = sns.lmplot(x="TotalBaseWaterVolume", y="mag", data=frakquake, 
+                     height=7, aspect=1.6, robust=True, palette='tab10', 
+                     scatter_kws=dict(s=60, linewidths=.7, edgecolors='black'))
+
+# Decorations
+#gridobj.set(xlim=(0.5, 7.5), ylim=(0, 50))
+plt.title("Fracking vs Earthquake", fontsize=20)
+plt.show()
+
+
