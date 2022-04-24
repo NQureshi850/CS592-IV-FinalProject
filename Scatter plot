@@ -1,79 +1,61 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-
+from sklearn.decomposition import PCA
+from matplotlib import pyplot as plt
+import seaborn as sns
+import numpy as np
 import pandas as pd
 
-fraking = pd.read_csv ('subsetFracking.csv')
-earthquake = pd.read_csv ('earthquakes_2010to2016.csv')
+frackingData = pd.read_csv('subsetFracking.csv')
+eqData = pd.read_csv('earthquakes_2010to2016.csv')
 
+frackingDF = pd.concat([frackingData['Longitude'], frackingData['Latitude']], axis=1, ignore_index=True)
 
-fraking["JobStartDate"] = pd.to_datetime(fraking["JobStartDate"])
-earthquake["time"] = pd.to_datetime(earthquake["time"])
-earthquake = earthquake[(earthquake['latitude'] > 30) & (earthquake['latitude'] < 40) & (earthquake['longitude'] > -110) & (earthquake['longitude'] < -90)]
-earthquake
+eqDF = pd.concat([eqData['longitude'], eqData['latitude']], axis=1, ignore_index=True)
 
+pca = PCA(n_components=1)
+frackingPCA = pca.fit_transform(frackingDF)
+frackingDF = pd.DataFrame(frackingPCA)
+frackingDF = frackingDF.rename(columns={0: "fr"})
 
-fraking['Year'] = pd.DatetimeIndex(fraking['JobStartDate']).year
+eqPCA = pca.fit_transform(eqDF)
+eqDF = pd.DataFrame(eqPCA)
+eqDF = eqDF.rename(columns={0: "eq"})
 
+frackingData["Geo"] = frackingDF
+eqData["Geo"] = eqDF
 
-fraking.head()
+frackingData["Geo"]  = frackingData["Geo"].astype(int)
+eqData["Geo"] = eqData["Geo"].astype(int)
 
+frackingData = frackingData.groupby(['Geo'])["TotalBaseWaterVolume"].sum()
+eqData = eqData.groupby(['Geo'])["mag"].mean()
 
-earthquake['Year'] = pd.DatetimeIndex(earthquake['time']).year
+frackingData = pd.DataFrame(frackingData)
+eqData = pd.DataFrame(eqData)
 
-
-earthquake.head()
-
-
-earthquake['YM'] = earthquake['time'].dt.strftime('%Y/%m')
-fraking['YM'] = fraking['JobStartDate'].dt.strftime('%Y/%m')
-
-
-fraking.head()
-
-
-earthquake.head()
-
-
-fraking = fraking.groupby(['YM'])["TotalBaseWaterVolume"].sum()
-
-
-fraking = pd.DataFrame(fraking)
-
-
-fraking
-
-
-earthquake = earthquake.groupby(['YM'])["mag"].sum()
-
-
-earthquake = pd.DataFrame(earthquake)
-
-
-earthquake
-
-
-frakquake = pd.merge(earthquake,fraking, left_on="YM", right_on = "YM" )
-
-
+frakquake = pd.merge(frackingData, eqData, left_on="Geo", right_on = "Geo" )
 frakquake
 
+start = frakquake["mag"].min()
+end =frakquake["mag"].max()
+width = end - start
+frakquake['TotalBaseWaterVolumeNor'] = (frakquake['TotalBaseWaterVolume'] - frakquake['TotalBaseWaterVolume'].min())/(frakquake['TotalBaseWaterVolume'].max() - frakquake['TotalBaseWaterVolume'].min()) * width + start
 
-import seaborn as sns
-import statsmodels.api as sm
-import statsmodels.formula.api as smf
-import matplotlib.pyplot as plt
 
-# Plot
+
 sns.set_style("white")
-gridobj = sns.lmplot(x="TotalBaseWaterVolume", y="mag", data=frakquake, 
+gridobj = sns.lmplot(x="TotalBaseWaterVolumeNor", y="mag", data=frakquake, 
                      height=7, aspect=1.6, robust=True, palette='tab10', 
                      scatter_kws=dict(s=60, linewidths=.7, edgecolors='black'))
 
 # Decorations
 #gridobj.set(xlim=(0.5, 7.5), ylim=(0, 50))
 plt.title("Fracking vs Earthquake", fontsize=20)
+plt.xlabel('Total base water volume for fracking')
+plt.ylabel('Earthquake Magnitude')
 plt.show()
 
+column_1 = frakquake['TotalBaseWaterVolumeNor']
+column_2 = frakquake['mag']
+correlation = column_1.corr(column_2)
 
+print("Correlation: ", correlation )
