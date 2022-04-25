@@ -1,0 +1,38 @@
+from sklearn.decomposition import PCA
+from matplotlib import pyplot as plt
+import seaborn as sns
+import numpy as np
+import pandas as pd
+
+frackingData = pd.read_csv('subsetFracking.csv')
+eq1947 = pd.read_csv('earthquake1937-1947.csv')
+eq1970 = pd.read_csv('earthquake1948to1970.csv')
+eq1980 = pd.read_csv('earthquake1971to1980.csv')
+ed1985 = pd.read_csv('earthquake1980to1985.csv')
+ed1990 = pd.read_csv('earthquake1986to1990.csv')
+ed1991 = pd.read_csv('earthquake1991to1995.csv')
+ed2000 = pd.read_csv('earthquake1996to2000.csv')
+ed2009 = pd.read_csv('earthquakes_2000to2009.csv')
+ed2016 = pd.read_csv('earthquakes_2010to2016.csv')
+
+earthquake = pd.concat([eq1947, eq1970, eq1980, ed1985, ed1990, ed1991, ed2000, ed2009, ed2016])
+
+
+earthquake["time"] = pd.to_datetime(earthquake["time"])
+earthquake['Year'] = pd.DatetimeIndex(earthquake['time']).year
+
+earthquake2 = earthquake.groupby(['Year'])["mag"].count()
+
+earthquake2 = pd.DataFrame(earthquake2)
+
+earthquake2['Years']= earthquake2.index
+
+sns.set_style("white")
+gridobj = sns.lmplot(x="Years", y="mag", data=earthquake2, 
+                     height=7, aspect=1.6, robust=True, palette='tab10', 
+                     scatter_kws=dict(s=60, linewidths=.7, edgecolors='black'))
+
+# Decorations
+#gridobj.set(xlim=(0.5, 7.5), ylim=(0, 50))
+plt.title("Earthquakes by year", fontsize=20)
+plt.show()
