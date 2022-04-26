@@ -13,6 +13,7 @@ from matplotlib.collections import LineCollection
 from matplotlib.lines import Line2D
 from matplotlib.widgets import Slider, Button
 
+
 matplotlib.use('webagg')
 
 # load data
@@ -61,6 +62,9 @@ fig, ax1 = plt.subplots()
 ax1.set(xlim=(x1,x2),ylim=(y1,y2), autoscale_on=False)
 figsldr, axsldr = plt.subplots()
 figzoom, axzoom = plt.subplots()
+figplot, axplot = plt.subplots()
+axplot.set(title='Number of Earthquakes per Year')
+axplot2 = axplot.twinx()
 axzoom.set(xlim=(x1,x2),ylim=(y1,y2), autoscale_on=False,
 	title='Click main figure to zoom!')
 
@@ -73,9 +77,11 @@ world.plot(ax = axzoom, legend=True, color='black',
 length = len(ax1.get_children())
 lengthzoom = len(axzoom.get_children())
 
-
-
-
+custom_lines = [Line2D([0], [0], color='blue', lw=4),
+                Line2D([0], [0], color='orange', lw=4)]
+ax1.legend(custom_lines, ['Earthquakes', 'Fracking'])
+axzoom.legend(custom_lines, ['Earthquakes', 'Fracking'])
+axplot.legend(custom_lines, ['Earthquakes', 'Fracking'])
 
 
 
@@ -109,7 +115,7 @@ figzoom_f = sns.kdeplot(x=fDf_temp['long'], y=fDf_temp['lat'],
 # slider
 time_slider = Slider(
     ax=axsldr,
-    label="Time",
+    label="Time (years)",
     valmin=2010,
     valmax=2016,
     valinit=2011,
@@ -162,7 +168,7 @@ print(time_slider.val)
 
 class zoomfig:
 	def __init__(self, eqDf, fDf, axzoom, figzoom, length, sample_size,
-					a, a1, time):
+					a, a1, time, earthquake, figplot, axplot, axplot2):
 		self.eqDf = eqDf
 		self.fDf = fDf
 		self.axzoom = axzoom
@@ -172,6 +178,10 @@ class zoomfig:
 		self.a = a
 		self.a1 = a1
 		self.time = time
+		self.earthquake = earthquake
+		self.figplot = figplot
+		self.axplot = axplot
+		self.axplot2 = axplot2
 		
 	def on_press(self, event):
 		# change axis limits
@@ -223,11 +233,68 @@ class zoomfig:
 				
 		
 		self.figzoom.canvas.draw()
+		
+		# make stuff on new figure
+		self.axplot.cla()
+		self.axplot2.cla()
+		eq_new = set_bounds(self.earthquake, x , y, delta)
+		eq_new = eq_new.groupby(['Year'])["mag"].count()
+		
+		eq_new = pd.DataFrame(eq_new)
+		
+		eq_new['Years']= eq_new.index
+		
+		a = self.axplot.plot(eq_new["Years"], eq_new["mag"] ,'b-o')
+		self.axplot.set(title='Number of Earthquakes per Year')
+		self.axplot.set_xlabel("Year")
+		self.axplot.set_ylabel("Number of Earthquakes")
+		
+		fDf_new = set_bounds(self.fDf, x, y, delta)
+		fDf_new = fDf_new.groupby(['year'])["TotalBaseWaterVolume"].sum()
+		fDf_new = pd.DataFrame(fDf_new)
+		fDf_new['Years'] = fDf_new.index
+				
+
+		self.axplot2.plot(fDf_new['Years'], fDf_new['TotalBaseWaterVolume'],
+								color='orange', marker='o', linestyle='solid')
+		
+							  
+		self.figplot.canvas.draw()
+
+		
+		
+
+
+
+## add linear plot
+# add historic earthquakes
+# bound by long/lat
+# do summation
+
+#eq1947 = pd.read_csv('earthquake1937-1947.csv')
+eq1970 = pd.read_csv('earthquake1948to1970.csv')
+eq1980 = pd.read_csv('earthquake1971to1980.csv')
+ed1985 = pd.read_csv('earthquake1980to1985.csv')
+ed1990 = pd.read_csv('earthquake1986to1990.csv')
+ed1991 = pd.read_csv('earthquake1991to1995.csv')
+ed2000 = pd.read_csv('earthquake1996to2000.csv')
+ed2009 = pd.read_csv('earthquakes_2000to2009.csv')
+ed2016 = pd.read_csv('earthquakes_2010to2016.csv')
+
+earthquake = pd.concat([eq1970, eq1980,
+				ed1985, ed1990, ed1991, ed2000, ed2009, ed2016])
+earthquake['long'] = earthquake['longitude']
+earthquake['lat'] = earthquake['latitude']
+earthquake["time"] = pd.to_datetime(earthquake["time"])
+earthquake['Year'] = pd.DatetimeIndex(earthquake['time']).year
 
 
 zoomfig1 = zoomfig(eqDf, fDf, axzoom, figzoom, lengthzoom, sample_size,
-					figzoom_eq, figzoom_f, time_slider.val)
+					figzoom_eq, figzoom_f, time_slider.val, earthquake,
+					figplot, axplot, axplot2)
 					
 fig.canvas.mpl_connect('button_press_event', zoomfig1.on_press)
+
+print(earthquake)
 
 plt.show()
