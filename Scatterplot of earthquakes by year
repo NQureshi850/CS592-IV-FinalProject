@@ -35,4 +35,6 @@ gridobj = sns.lmplot(x="Years", y="mag", data=earthquake2,
 # Decorations
 #gridobj.set(xlim=(0.5, 7.5), ylim=(0, 50))
 plt.title("Earthquakes by year", fontsize=20)
+plt.xlabel('Year')
+plt.title("Number of earthquakes recordedr", fontsize=20)
 plt.show()
