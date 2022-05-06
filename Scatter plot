@@ -49,7 +49,7 @@ gridobj = sns.lmplot(x="TotalBaseWaterVolumeNor", y="mag", data=frakquake,
 
 # Decorations
 #gridobj.set(xlim=(0.5, 7.5), ylim=(0, 50))
-plt.title("Fracking vs Earthquake", fontsize=20)
+plt.title("Average earthquake magnitude around fracking areas", fontsize=20)
 plt.xlabel('Total base water volume for fracking')
 plt.ylabel('Earthquake Magnitude')
 plt.show()
