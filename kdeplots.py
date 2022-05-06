@@ -63,7 +63,7 @@ ax1.set(xlim=(x1,x2),ylim=(y1,y2), autoscale_on=False)
 figsldr, axsldr = plt.subplots()
 figzoom, axzoom = plt.subplots()
 figplot, axplot = plt.subplots()
-axplot.set(title='Number of Earthquakes per Year')
+axplot.set(title='Earthquake and Fracking from 1950-2016')
 axplot2 = axplot.twinx()
 axzoom.set(xlim=(x1,x2),ylim=(y1,y2), autoscale_on=False,
 	title='Click main figure to zoom!')
@@ -200,6 +200,8 @@ class zoomfig:
 			y2 = y + delta
 			data_new = data[(data['long'] > x1) & (data['long'] < x2) & 
            		(data['lat'] > y1) & (data['lat'] < y2)]
+				
+			
 			return data_new.reset_index()
 			
 		eqDf_temp = set_bounds(self.eqDf, x, y, delta)
@@ -242,22 +244,41 @@ class zoomfig:
 		
 		eq_new = pd.DataFrame(eq_new)
 		
+			
 		eq_new['Years']= eq_new.index
 		
 		a = self.axplot.plot(eq_new["Years"], eq_new["mag"] ,'b-o')
-		self.axplot.set(title='Number of Earthquakes per Year')
+		self.axplot.set(title='Number of Earthquakes (2.5+ mag) per Year')
 		self.axplot.set_xlabel("Year")
 		self.axplot.set_ylabel("Number of Earthquakes")
 		
-		fDf_new = set_bounds(self.fDf, x, y, delta)
-		fDf_new = fDf_new.groupby(['year'])["TotalBaseWaterVolume"].sum()
-		fDf_new = pd.DataFrame(fDf_new)
-		fDf_new['Years'] = fDf_new.index
-				
-
-		self.axplot2.plot(fDf_new['Years'], fDf_new['TotalBaseWaterVolume'],
-								color='orange', marker='o', linestyle='solid')
 		
+		
+		fDf_new = set_bounds(self.fDf, x, y, delta)
+		if (len(fDf_new) == 0):
+			
+			
+			self.axplot2.set_ylabel("Total Base Water Volume Fracked (gal)")
+			self.axplot2.plot([0], [0],
+							color='orange', marker='o', linestyle='solid')
+			
+			
+			custom_lines = [Line2D([0], [0], color='blue', lw=4),
+	                Line2D([0], [0], color='orange', lw=4)]
+			self.axplot.legend(custom_lines, ['Earthquakes', 'Fracking'])
+		
+		else:	
+			fDf_new = fDf_new.groupby(['year'])["TotalBaseWaterVolume"].sum()
+			fDf_new = pd.DataFrame(fDf_new)
+			fDf_new['Years'] = fDf_new.index
+			self.axplot2.set_ylabel("Total Base Water Volume Fracked (gal)")
+			self.axplot2.plot(fDf_new['Years'], fDf_new['TotalBaseWaterVolume'],
+									color='orange', marker='o', linestyle='solid')
+			
+			
+			custom_lines = [Line2D([0], [0], color='blue', lw=4),
+	                Line2D([0], [0], color='orange', lw=4)]
+			self.axplot.legend(custom_lines, ['Earthquakes', 'Fracking'])
 							  
 		self.figplot.canvas.draw()
 
